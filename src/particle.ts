@@ -11,6 +11,7 @@ export class Particle {
     private _velocityY: number;
     private _renderer: Renderer;
     private _destroyed = false;
+    private _startTime = Date.now();
 
     constructor(
         layer: Layer,
@@ -22,16 +23,25 @@ export class Particle {
         velocityY: number
     ) {
         this._x = x;
-        this._y = y;
+        this._y = 100;
         this._width = width;
         this._height = height;
         this._layer = layer;
         this._velocityX = velocityX;
         this._velocityY = velocityY;
-        this._renderer = this._layer.scene.renderer;
+        this._layer.addQuad(
+            this._x,
+            this._y,
+            this._x + this._width,
+            this._y + this._height,
+            this._velocityY,
+            this._velocityX,
+            this._startTime
+        );
+        // this._renderer = this._layer.scene.renderer;
     }
 
-    render (delta: number) {
+    /*render (delta: number) {
         if (
             // Exceeds bottom
             this._y >= this._renderer.height ||
@@ -60,5 +70,5 @@ export class Particle {
             this._x + this._width,
             this._y + this._height
         );
-    }
+    }*/
 }

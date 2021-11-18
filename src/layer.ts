@@ -4,7 +4,7 @@ import { Scene } from "./scene";
 
 const MAX_QUADS_PER_BATCH = 1000;
 const VERTS_PER_QUAD = 6;
-const FLOATS_PER_VERT = 4;
+const FLOATS_PER_VERT = 7;
 
 export class Layer {
     private _particles: Particle[] = [];
@@ -43,6 +43,8 @@ export class Layer {
         }
 
         this._texture = texture;
+
+        this.spawn(1);
     }
 
     private createTexture(textureImage: HTMLImageElement) {
@@ -62,45 +64,65 @@ export class Layer {
         return texture;
     }
 
-    addQuad(left: number, top: number, right: number, bottom: number) {
+    addQuad(left: number, top: number, right: number, bottom: number, velocityX: number, velocityY: number, time: number) {
         const offset = this._quadCount * VERTS_PER_QUAD * FLOATS_PER_VERT;
     
         // Triangle #1
         this._verticies[offset] = left;
         this._verticies[offset + 1] = top;
-        this._verticies[offset + 2] = 0;
-        this._verticies[offset + 3] = 1;
-
-        this._verticies[offset + 4] = right;
-        this._verticies[offset + 5] = top;
+        this._verticies[offset + 2] = velocityX;
+        this._verticies[offset + 3] = velocityY;
+        this._verticies[offset + 4] = time;
+        this._verticies[offset + 5] = 0;
         this._verticies[offset + 6] = 1;
-        this._verticies[offset + 7] = 1;
 
-        this._verticies[offset + 8] = right;
-        this._verticies[offset + 9] = bottom;
-        this._verticies[offset + 10] = 1;
-        this._verticies[offset + 11] = 0;
+        this._verticies[offset + 7] = right;
+        this._verticies[offset + 8] = top;
+        this._verticies[offset + 9] = velocityX;
+        this._verticies[offset + 10] = velocityY;
+        this._verticies[offset + 11] = time;
+        this._verticies[offset + 12] = 1;
+        this._verticies[offset + 13] = 1;
+
+        this._verticies[offset + 14] = right;
+        this._verticies[offset + 15] = bottom;
+        this._verticies[offset + 16] = velocityX;
+        this._verticies[offset + 17] = velocityY;
+        this._verticies[offset + 18] = time;
+        this._verticies[offset + 19] = 1;
+        this._verticies[offset + 20] = 0;
         
         // Triangle #2
-        this._verticies[offset + 12] = left;
-        this._verticies[offset + 13] = top;
-        this._verticies[offset + 14] = 0;
-        this._verticies[offset + 15] = 1;
+        this._verticies[offset + 21] = left;
+        this._verticies[offset + 22] = top;
+        this._verticies[offset + 23] = velocityX;
+        this._verticies[offset + 24] = velocityY;
+        this._verticies[offset + 25] = time;
+        this._verticies[offset + 26] = 0;
+        this._verticies[offset + 27] = 1;
 
-        this._verticies[offset + 16] = left;
-        this._verticies[offset + 17] = bottom;
-        this._verticies[offset + 18] = 0;
-        this._verticies[offset + 19] = 0;
+        this._verticies[offset + 28] = left;
+        this._verticies[offset + 29] = bottom;
+        this._verticies[offset + 30] = velocityX;
+        this._verticies[offset + 31] = velocityY;
+        this._verticies[offset + 32] = time;
+        this._verticies[offset + 33] = 0;
+        this._verticies[offset + 34] = 0;
 
-        this._verticies[offset + 20] = right;
-        this._verticies[offset + 21] = bottom;
-        this._verticies[offset + 22] = 1;
-        this._verticies[offset + 23] = 0;
+        this._verticies[offset + 35] = right;
+        this._verticies[offset + 36] = bottom;
+        this._verticies[offset + 37] = velocityX;
+        this._verticies[offset + 38] = velocityY;
+        this._verticies[offset + 39] = time;
+        this._verticies[offset + 40] = 1;
+        this._verticies[offset + 41] = 0;
     
+        console.log(this._verticies);
+
         this._quadCount++;
     
         if (this._quadCount == MAX_QUADS_PER_BATCH) {
-            this.flushQuads();
+            // this.flushQuads();
         }
     }
 
@@ -118,15 +140,37 @@ export class Layer {
         gl.bufferData(gl.ARRAY_BUFFER, this._verticies, gl.STATIC_DRAW);
 
         const positionAttributeLocation = gl.getAttribLocation(program, 'vertPosition');
+        const velocityAttributeLocation = gl.getAttribLocation(program, 'velocity');
+        const timeAddedAttributeLocation = gl.getAttribLocation(program, 'timeAdded');
         const texCoordAttributeLocation = gl.getAttribLocation(program, 'vertTexCoord');
+
+        const sizeOfVertex = FLOATS_PER_VERT * Float32Array.BYTES_PER_ELEMENT;
 
         gl.vertexAttribPointer(
             positionAttributeLocation,
             2, // number of elements per attribute
             gl.FLOAT,
             false,
-            FLOATS_PER_VERT * Float32Array.BYTES_PER_ELEMENT, // size of an individual vertex
+            sizeOfVertex, // size of an individual vertex
             0 // offset from the beginning of an vertex
+        );
+
+        gl.vertexAttribPointer(
+            velocityAttributeLocation,
+            2, // number of elements per attribute
+            gl.FLOAT,
+            false,
+            sizeOfVertex, // size of an individual vertex
+            2 * Float32Array.BYTES_PER_ELEMENT // offset from the beginning of an vertex
+        );
+
+        gl.vertexAttribPointer(
+            timeAddedAttributeLocation,
+            1, // number of elements per attribute
+            gl.FLOAT,
+            false,
+            sizeOfVertex, // size of an individual vertex
+            4 * Float32Array.BYTES_PER_ELEMENT // offset from the beginning of an vertex
         );
 
         gl.vertexAttribPointer(
@@ -134,16 +178,18 @@ export class Layer {
             2, // number of elements per attribute
             gl.FLOAT,
             false,
-            FLOATS_PER_VERT * Float32Array.BYTES_PER_ELEMENT, // size of an individual vertex
-            2 * Float32Array.BYTES_PER_ELEMENT, // offset from the beginning of an vertex
+            sizeOfVertex, // size of an individual vertex
+            5 * Float32Array.BYTES_PER_ELEMENT, // offset from the beginning of an vertex
         );
 
         gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.enableVertexAttribArray(velocityAttributeLocation);
+        gl.enableVertexAttribArray(timeAddedAttributeLocation);
         gl.enableVertexAttribArray(texCoordAttributeLocation);
     
         gl.drawArrays(gl.TRIANGLES, 0, this._quadCount * VERTS_PER_QUAD);
 
-        this._quadCount = 0;
+        // this._quadCount = 0;
     }
 
     addParticle(x: number, y: number, width: number, height: number, velocityX: number, velocityY: number) {
@@ -177,15 +223,15 @@ export class Layer {
         const now = Date.now();
 
         if (now >= this._nextSpawn) {
-            this._nextSpawn = now + this._spawnRate;
-            this.spawn(this._spawns);
+            // this._nextSpawn = now + this._spawnRate;
+            //this.spawn(this._spawns);
         }
         
-        let i = 0, len = this._particles.length;
+        /*let i = 0, len = this._particles.length;
         while (i < len) {
             this._particles[i]?.render(delta);
             i++;
-        }
+        }*/
 
         this.flushQuads();
     }

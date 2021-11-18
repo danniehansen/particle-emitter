@@ -3,17 +3,13 @@ export class Renderer {
     private _gl: WebGL2RenderingContext;
     private _shaders: WebGLShader[] = [];
     private _program: WebGLProgram;
+    private _resolutionUniformLocation: WebGLUniformLocation | null = null;
+    private _timeUniformLocation: WebGLUniformLocation | null = null;
 
     public width = 0;
     public height = 0;
 
-    constructor() {
-        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
-
-        if (!canvas) {
-            throw new Error('Canvas unavailable');
-        }
-
+    constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
 
         const gl = this._canvas.getContext('webgl2');
@@ -54,12 +50,12 @@ export class Renderer {
 
         this._gl.useProgram(this._program);
 
-        const resolutionUniformLocation = this._gl.getUniformLocation(this._program, 'u_resolution');
-        this._gl.uniform2f(resolutionUniformLocation, this._canvas.width, this._canvas.height);
+        this._gl.uniform2f(this._resolutionUniformLocation, this._canvas.width, this._canvas.height);
+        this._gl.uniform1f(this._timeUniformLocation, parseFloat(Date.now().toFixed(2)));
     }
 
     clear () {
-        this._gl.clearColor(0.75, 0.85, 0.8, 1.0);
+        this._gl.clearColor(0, 0, 0, 0);
         this._gl.clear(this._gl.COLOR_BUFFER_BIT | this._gl.DEPTH_BUFFER_BIT);
     }
 
@@ -71,7 +67,6 @@ export class Renderer {
         }
 
         this._gl.shaderSource(shader, source);
-
         this._gl.compileShader(shader);
 
         if (!this._gl.getShaderParameter(shader, this._gl.COMPILE_STATUS)) {
@@ -99,13 +94,16 @@ export class Renderer {
             console.error(this._gl.getProgramInfoLog(this._program));
             throw new Error('Unable to validate program. See console for more information');
         }
+
+        this._resolutionUniformLocation = this._gl.getUniformLocation(this._program, 'u_resolution');
+        this._timeUniformLocation = this._gl.getUniformLocation(this._program, 'u_time');
     }
 
-    get gl() {
+    get gl () {
         return this._gl;
     }
 
-    get program() {
+    get program () {
         return this._program;
     }
 }
